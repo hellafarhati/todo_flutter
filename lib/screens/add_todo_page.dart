@@ -5,13 +5,29 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 class AddTODOPage extends StatefulWidget {
-  const AddTODOPage({Key? key}) : super(key: key);
+  final Map? todo;
+
+  AddTODOPage.withParams(this.todo);
+
+  const AddTODOPage(  {  this.todo ,Key? key}) : super(key: key);
+
+
 
   @override
   State<AddTODOPage> createState() => _AddTODOPageState();
 }
 
 class _AddTODOPageState extends State<AddTODOPage> {
+
+  bool isEdit = false;
+
+  @override
+  void initState() {
+    if(widget.todo != null){
+      isEdit = true;
+    }
+    super.initState();
+  }
 
   TextEditingController title = TextEditingController();
   TextEditingController description = TextEditingController();
@@ -22,7 +38,7 @@ class _AddTODOPageState extends State<AddTODOPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Add TODO"),
+        title: Text( isEdit ?  "Edit TODO" : "Add TODO"),
       ),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
