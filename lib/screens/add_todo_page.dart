@@ -3,42 +3,44 @@ import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:todo_s/services/ToDoService.dart';
+import 'package:todo_s/utils/Utils.dart';
 
 class AddTODOPage extends StatefulWidget {
   final Map? todo;
 
   AddTODOPage.withParams(this.todo);
 
-  const AddTODOPage(  {  this.todo ,Key? key}) : super(key: key);
-
-
+  const AddTODOPage({this.todo, Key? key}) : super(key: key);
 
   @override
   State<AddTODOPage> createState() => _AddTODOPageState();
 }
 
 class _AddTODOPageState extends State<AddTODOPage> {
-
   bool isEdit = false;
-
-  @override
-  void initState() {
-    if(widget.todo != null){
-      isEdit = true;
-    }
-    super.initState();
-  }
-
   TextEditingController title = TextEditingController();
   TextEditingController description = TextEditingController();
 
+  late var todo;
 
+  @override
+  void initState() {
+    todo = widget.todo;
+    if (todo != null) {
+      isEdit = true;
+
+      title.text = todo['title'];
+      description.text = todo['description'];
+    }
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text( isEdit ?  "Edit TODO" : "Add TODO"),
+        title: Text(isEdit ? "Edit TODO" : "Add TODO"),
       ),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -59,11 +61,23 @@ class _AddTODOPageState extends State<AddTODOPage> {
               minLines: 3,
               maxLines: 5,
             ),
+            SizedBox(
+              height: 20,
+            ),
             ElevatedButton(
-                onPressed:
-                  addTODO,
-
-               child: Text("Submit")),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.limeAccent[100],
+                ),
+                onPressed: () {
+                  isEdit ? updateTODO(todo['_id'] as String) : addTODO();
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(
+                    isEdit ? "Update" : "Submit",
+                    style: TextStyle(color: Colors.black54),
+                  ),
+                )),
             SizedBox(
               height: 20,
             )
@@ -73,48 +87,37 @@ class _AddTODOPageState extends State<AddTODOPage> {
     );
   }
 
-  Future <void> addTODO() async {
-    print("start merthos");
-
-    final url = "http://api.nstack.in/v1/todos";
-    final uri = Uri.parse(url);
-
-    final body = {
+  Future<void> addTODO() async {
+    final todoItem = {
       "title": title.text,
       "description": description.text,
       "is_completed": false
     };
 
-    final result = await http.post(uri, body: jsonEncode(body)  ,headers:<String, String> {'Content-Type': 'application/json'});
+    final isSuccess = await ToDoService.addTodo(todoItem);
 
-    print(result.body);
-    print(result.statusCode);
-
-
-
-    if(result.statusCode == 201){
+    if (isSuccess) {
       title.text = "";
       description.text = "";
-      showSuccesMessage("Created successfully");
-    }else {
-      showErrorMessage("An error occured");
-
+      showInfoMessage(context, "Created successfully");
+    } else {
+      showErrorMessage(context, "An error occured");
     }
-
-
-
-
   }
 
-  void showSuccesMessage(String message) {
-    final snackbar = SnackBar(content: Text (message , style: TextStyle(color: Colors.white), ),backgroundColor: Colors.green,);
-    ScaffoldMessenger.of(context).showSnackBar(snackbar);
-  }
+  Future<void> updateTODO(String id) async {
+    final todoItem = {
+      "title": title.text,
+      "description": description.text,
+      "is_completed": false
+    };
 
-  void showErrorMessage(String message) {
-    final snackbar = SnackBar(content: Text (message , style: TextStyle(color: Colors.white), ),backgroundColor: Colors.red,);
-    ScaffoldMessenger.of(context).showSnackBar(snackbar);
+    final isSuccess = await ToDoService.updateTodo(id, todoItem);
+
+    if (isSuccess) {
+      showInfoMessage(context, "Updated successfully");
+    } else {
+      showErrorMessage(context, "An error occured");
+    }
   }
 }
-
-

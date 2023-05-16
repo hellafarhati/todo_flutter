@@ -2,6 +2,9 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:todo_s/services/ToDoService.dart';
+import 'package:todo_s/widgets/TodoCard.dart';
+import '../utils/Utils.dart';
 import 'add_todo_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -14,9 +17,13 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   bool isLoading = true;
   var items = [];
+  int page  = 1 ;
+
+  final scrollController = ScrollController();
 
   @override
   void initState() {
+    scrollController.addListener(_scrollListener);
     getAllTasks();
     super.initState();
   }
@@ -31,43 +38,53 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-          onPressed: NavigateToAddTODOPage, label: Text("Add TODO")),
+        backgroundColor:  Colors.limeAccent[100],
+          onPressed: NavigateToAddTODOPage, label: Text("Add TODO")
+      ),
       body: Visibility(
         visible: isLoading,
         replacement: RefreshIndicator(
           color: Colors.deepOrange,
           onRefresh: getAllTasks,
-          child: ListView.builder(
-              itemCount: items.length,
-              itemBuilder: (context, index) {
-                final item = items[index] as Map;
-                final id = item['_id'] as String;
-                return ListTile(
+          child: Visibility(
+            visible: items.isNotEmpty,
+            replacement: Center(
+              child : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
 
+                children: [
 
-                  leading: CircleAvatar(child: Text("${index + 1}")),
-                  title: Text(item['title']),
-                  subtitle: Text(item['description']),
-                  trailing: PopupMenuButton(
-                    onSelected: (value) {
-                      print("value"+value);
+                  Icon(Icons.search_off_sharp ,
+                  size: 45,
+                  color: Colors.deepOrange,),
 
-                      if (value == "edit") {
-                        NavigateToEditTODOPage(item);
-                      } else if (value == "delete") {
-                        deleteById(id);
-
-                      }
-                    },
-                    itemBuilder: (BuildContext context) {
-                      return [
-                        PopupMenuItem(child: Text("Edit") , value: "edit",),
-                        PopupMenuItem(child: Text("Delete") , value: "delete",)
-                      ];
-                    },
+                  Text(
+                    "No items to do",
+                    style: Theme.of(context).textTheme.headlineLarge,
                   ),
-                );
-              }),
+
+
+
+
+                ],
+              )
+
+
+            ),
+            child: ListView.builder(
+              controller: scrollController,
+                padding: EdgeInsets.all(16),
+                itemCount: items.length,
+                itemBuilder: (context, index) {
+                  final item = items[index] as Map;
+                  final id = item['_id'] as String;
+                  return TodoCard(
+                      index: index,
+                      item: item,
+                      navigateToEdit: NavigateToEditTODOPage,
+                      navigateToDelete: deleteById);
+                }),
+          ),
         ),
         child: Center(
             child: CircularProgressIndicator(
@@ -77,7 +94,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Future <void> NavigateToAddTODOPage() async{
+  Future<void> NavigateToAddTODOPage() async {
     final route = MaterialPageRoute(
       builder: (context) => AddTODOPage(),
     );
@@ -87,69 +104,59 @@ class _HomePageState extends State<HomePage> {
       isLoading = true;
     });
     getAllTasks();
-
   }
 
- void NavigateToEditTODOPage(Map item)  {
+  Future<void> NavigateToEditTODOPage(Map item) async {
     final route = MaterialPageRoute(
       builder: (context) => AddTODOPage.withParams(item),
     );
-      Navigator.push(context, route);
+    await Navigator.push(context, route);
 
     setState(() {
       isLoading = true;
     });
     getAllTasks();
-
   }
 
   Future<void> getAllTasks() async {
-    final url = "http://api.nstack.in/v1/todos?page=1&limit=10";
-    final uri = Uri.parse(url);
 
-    final response = await http.get(uri);
+    final dataList  = await ToDoService.fetchTodos(page);
 
-    if (response.statusCode == 200) {
-      final json = jsonDecode(response.body) as Map;
 
-      final result = json['items'] as List;
+    if (dataList != null) {
+
 
       setState(() {
-        items = result;
+        items = items+dataList;
         isLoading = false;
       });
+    }else {
+      showErrorMessage(context , "Something went wrong");
     }
-
-
   }
 
-  Future <void> deleteById(String id)  async{
-    final url = "http://api.nstack.in/v1/todos/$id";
-    final uri = Uri.parse(url);
+  Future<void> deleteById(String id) async {
+    final isSuccess = ToDoService.deleteTodo(id);
 
-    final response = await http.delete(uri);
-
-    if(response.statusCode == 200){
-      final filteredList = items.where((element) => element['_id'] != id ).toList();
+    if (await isSuccess) {
+      final filteredList =
+          items.where((element) => element['_id'] != id).toList();
       setState(() {
         items = filteredList;
       });
-
-
+    } else {
+      showErrorMessage(context ,"An error occured ");
     }
-    else {
-      showErrorMessage("An error occured ");
-    }
-
-
-
-
   }
 
-  void showErrorMessage(String message) {
-    final snackbar = SnackBar(content: Text (message , style: TextStyle(color: Colors.white), ),backgroundColor: Colors.red,);
-    ScaffoldMessenger.of(context).showSnackBar(snackbar);
+
+
+  void _scrollListener() {
+    if(scrollController.position.pixels == scrollController.position.maxScrollExtent){
+      page++;
+      getAllTasks();
+    }
+
+
   }
 }
-
-
