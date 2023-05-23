@@ -19,9 +19,9 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  bool isLoading = true;
+  bool isLoading = false;
 
-  bool isPaginationLoading = true;
+  bool isPaginationLoading = false;
 
   var items = [];
   int page  = 1 ;
@@ -109,7 +109,7 @@ class _HomePageState extends State<HomePage> {
                       navigateToDelete: deleteById);
                 }
                 else {
-                  return Center(child: CircularProgressIndicator(color: Colors.deepOrangeAccent,));
+                  return Center(child: CircularProgressIndicator(color: Colors.yellow,));
                 }
 
                 }
@@ -148,7 +148,11 @@ class _HomePageState extends State<HomePage> {
     getAllTasks();
   }
 
+
+
+
   Future<void> getAllTasks() async {
+
 
     final dataList  = await ToDoService.fetchTodos(page);
 

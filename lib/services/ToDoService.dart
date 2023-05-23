@@ -39,6 +39,17 @@ class ToDoService {
     return result.statusCode == 200;
   }
 
+
+  static Future<bool> markTodoAsCompleted(String id, Map todoItem) async {
+    final url = "https://api.nstack.in/v1/todos/$id";
+    final uri = Uri.parse(url);
+    final result = await http.put(uri,
+        body: jsonEncode(todoItem),
+        headers: <String, String>{'Content-Type': 'application/json'});
+
+    return result.statusCode == 200;
+  }
+
   static Future<bool> deleteTodo(String id) async {
     final url = "http://api.nstack.in/v1/todos/$id";
     final uri = Uri.parse(url);

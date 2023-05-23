@@ -120,4 +120,20 @@ class _AddTODOPageState extends State<AddTODOPage> {
       showErrorMessage(context, "An error occured");
     }
   }
+
+  Future<void> markTODOAsRead(String id) async {
+    final todoItem = {
+      "title": todo['title'],
+      "description": todo['description'],
+      "is_completed": true
+    };
+
+    final isSuccess = await ToDoService.markTodoAsCompleted(id, todoItem);
+
+    if (isSuccess) {
+      showInfoMessage(context, "Marked As Read");
+    } else {
+      showErrorMessage(context, "An error occured");
+    }
+  }
 }
