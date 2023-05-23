@@ -2,12 +2,16 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import 'package:todo_s/services/ToDoService.dart';
 import 'package:todo_s/widgets/TodoCard.dart';
+import '../settings/ThemeSettings.dart';
 import '../utils/Utils.dart';
 import 'add_todo_page.dart';
 
 class HomePage extends StatefulWidget {
+
+
   const HomePage({Key? key}) : super(key: key);
 
   @override
@@ -16,10 +20,21 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   bool isLoading = true;
+
+  bool isPaginationLoading = true;
+
   var items = [];
   int page  = 1 ;
 
   final scrollController = ScrollController();
+
+
+  void _toggleTheme (){
+  final settings = Provider.of<ThemeSettings> (context, listen: false);
+
+      settings. toggleTheme () ;
+}
+
 
   @override
   void initState() {
@@ -36,6 +51,14 @@ class _HomePageState extends State<HomePage> {
         title: Text(
           "TODOs",
         ),
+        actions: [
+          IconButton(onPressed: () {
+            _toggleTheme();
+          }, icon: Icon(
+            Icons.dark_mode,
+            color: Colors.indigo,
+          ))
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor:  Colors.limeAccent[100],
@@ -74,8 +97,9 @@ class _HomePageState extends State<HomePage> {
             child: ListView.builder(
               controller: scrollController,
                 padding: EdgeInsets.all(16),
-                itemCount: items.length,
+                itemCount: isPaginationLoading ? items.length + 1 : items.length  ,
                 itemBuilder: (context, index) {
+                if(index < items.length){
                   final item = items[index] as Map;
                   final id = item['_id'] as String;
                   return TodoCard(
@@ -83,7 +107,13 @@ class _HomePageState extends State<HomePage> {
                       item: item,
                       navigateToEdit: NavigateToEditTODOPage,
                       navigateToDelete: deleteById);
-                }),
+                }
+                else {
+                  return Center(child: CircularProgressIndicator(color: Colors.deepOrangeAccent,));
+                }
+
+                }
+                ),
           ),
         ),
         child: Center(
@@ -151,10 +181,18 @@ class _HomePageState extends State<HomePage> {
 
 
 
-  void _scrollListener() {
+  Future <void> _scrollListener() async{
     if(scrollController.position.pixels == scrollController.position.maxScrollExtent){
+
+      setState(() {
+        isPaginationLoading = true;
+      });
       page++;
-      getAllTasks();
+     await  getAllTasks();
+
+      setState(() {
+        isPaginationLoading = false;
+      });
     }
 
 

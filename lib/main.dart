@@ -1,25 +1,39 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:todo_s/screens/home_page.dart';
+import 'package:todo_s/settings/ThemeSettings.dart';
 
-void main() {
-  runApp(const MyApp());
+void main() async{
+   WidgetsFlutterBinding.ensureInitialized();
+  SharedPreferences sharedPreferences =await SharedPreferences.getInstance();
+  final isDark = sharedPreferences.getBool("is_dark") ?? false;
+
+  runApp(  MyApp(isDark: isDark,));
 }
 
 
-class MyApp extends StatefulWidget {
-  const MyApp({Key? key}) : super(key: key);
+class MyApp extends StatelessWidget {
+  final bool isDark;
+  const MyApp({Key? key, required this.isDark}) : super(key: key);
 
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
 
-class _MyAppState extends State<MyApp> {
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark(),
-      home: HomePage(),
+
+    return ChangeNotifierProvider(
+      create: (context) => ThemeSettings(isDark),
+      builder: (context , snapshot) {
+        final settings = Provider.of<ThemeSettings> (context);
+
+        return  MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: settings.currentTheme ,
+        home: HomePage(),
+
+        );
+      },
 
     );
   }
